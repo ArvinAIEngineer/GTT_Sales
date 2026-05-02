@@ -94,16 +94,22 @@ async def analyze_conversation(scenario_id: str, transcript: str):
     
     prompt = f"""{eval_prompt_base}
 
+    IMPORTANT EVALUATION RULES:
+    1. YOUR TARGET: Evaluate the **SALESPERSON** (labeled 'Salesperson' in the transcript).
+    2. IGNORE PROSPECT: The 'Prospect' is the AI playing a role. Do NOT evaluate the Prospect's performance, tone, or effectiveness.
+    3. PERSPECTIVE: Provide feedback directly to the Salesperson to help them improve.
+
     EVALUATION CRITERIA:
     - SPEAKING TONE & STYLE (30 points): professional_tone (10), active_listening (10), engagement_quality (10)
     - CONVERSATION CONTENT (70 points): needs_assessment (25), value_proposition (25), objection_handling (20)
 
     Calculate overall_score as the sum of all individual scores (max 100).
-    Provide 3 strengths and 3 improvements.
+    Provide 3 strengths and 3 improvements for the SALESPERSON.
 
     CONVERSATION TO EVALUATE:
     {transcript}
     """
+
 
     try:
         completion = client.beta.chat.completions.parse(
@@ -147,7 +153,15 @@ st.markdown("""
         align-items: center;
         margin-bottom: 10px;
     }
+    .briefing-card {
+        background-color: #1e2130;
+        padding: 15px;
+        border-radius: 10px;
+        border-left: 5px solid #4bafff;
+        margin-bottom: 20px;
+    }
 </style>
+
 """, unsafe_allow_html=True)
 
 # --- Sidebar ---
@@ -187,8 +201,15 @@ with st.sidebar:
 
 if st.session_state.analysis_loading:
     with st.spinner("🧠 Analyzing your performance with Gemini..."):
-        transcript = "\n".join([f"{m['role']}: {m['content']}" for m in st.session_state.messages if m["role"] != "system"])
+        transcript = ""
+        for m in st.session_state.messages:
+            if m["role"] == "user":
+                transcript += f"Salesperson: {m['content']}\n"
+            elif m["role"] == "assistant":
+                transcript += f"Prospect: {m['content']}\n"
+        
         st.session_state.assessment = asyncio.run(analyze_conversation(st.session_state.scenario_id, transcript))
+
     st.session_state.analysis_loading = False
 
 if st.session_state.assessment:
@@ -243,7 +264,32 @@ if st.session_state.assessment:
 else:
     # Chat Interface
     st.title(f"Roleplay: {scenarios[st.session_state.scenario_id]['name']}")
-    st.caption(scenarios[st.session_state.scenario_id]['description'])
+    
+    scenario_data = scenarios[st.session_state.scenario_id]
+    if "briefing" in scenario_data:
+        b = scenario_data["briefing"]
+        with st.container():
+            st.markdown(f"""
+            <div class="briefing-card">
+                <h4>📖 Scenario Briefing</h4>
+                <div style="display: flex; flex-wrap: wrap; gap: 20px;">
+                    <div style="flex: 1; min-width: 200px;">
+                        <b>👤 Your Role:</b> {b.get('role', 'Salesperson')}<br>
+                        <b>📦 Product:</b> {b.get('product', 'N/A')}<br>
+                        <b>💰 Deal Value:</b> {b.get('deal_value', 'N/A')}
+                    </div>
+                    <div style="flex: 1; min-width: 200px;">
+                        <b>📍 Scene:</b> {b.get('scene', 'N/A')}<br>
+                        <b>🎯 Objective:</b> {b.get('objective', 'N/A')}
+                    </div>
+                </div>
+                <hr style="margin: 10px 0;">
+                <b>📝 Instructions:</b> {b.get('instructions', 'N/A')}
+            </div>
+            """, unsafe_allow_html=True)
+    else:
+        st.caption(scenario_data['description'])
+
 
     for msg in st.session_state.messages:
         if msg["role"] != "system":
