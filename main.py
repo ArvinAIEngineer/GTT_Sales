@@ -197,6 +197,22 @@ with st.sidebar:
         else:
             st.session_state.analysis_loading = True
 
+    # --- Sidebar Briefing ---
+    if st.session_state.scenario_id in scenarios:
+        scenario_data = scenarios[st.session_state.scenario_id]
+        if "briefing" in scenario_data:
+            b = scenario_data["briefing"]
+            st.markdown("---")
+            st.markdown("### 📖 Scenario Briefing")
+            st.markdown(f"**👤 Your Role:** {b.get('role', 'Salesperson')}")
+            st.markdown(f"**📦 Product:** {b.get('product', 'N/A')}")
+            st.markdown(f"**💰 Deal Value:** {b.get('deal_value', 'N/A')}")
+            st.markdown(f"**📍 Scene:** {b.get('scene', 'N/A')}")
+            st.markdown(f"**🎯 Objective:** {b.get('objective', 'N/A')}")
+            st.markdown("---")
+            st.markdown(f"**📝 Instructions:** {b.get('instructions', 'N/A')}")
+
+
 # --- Main Interface ---
 
 if st.session_state.analysis_loading:
@@ -266,29 +282,8 @@ else:
     st.title(f"Roleplay: {scenarios[st.session_state.scenario_id]['name']}")
     
     scenario_data = scenarios[st.session_state.scenario_id]
-    if "briefing" in scenario_data:
-        b = scenario_data["briefing"]
-        with st.container():
-            st.markdown(f"""
-            <div class="briefing-card">
-                <h4>📖 Scenario Briefing</h4>
-                <div style="display: flex; flex-wrap: wrap; gap: 20px;">
-                    <div style="flex: 1; min-width: 200px;">
-                        <b>👤 Your Role:</b> {b.get('role', 'Salesperson')}<br>
-                        <b>📦 Product:</b> {b.get('product', 'N/A')}<br>
-                        <b>💰 Deal Value:</b> {b.get('deal_value', 'N/A')}
-                    </div>
-                    <div style="flex: 1; min-width: 200px;">
-                        <b>📍 Scene:</b> {b.get('scene', 'N/A')}<br>
-                        <b>🎯 Objective:</b> {b.get('objective', 'N/A')}
-                    </div>
-                </div>
-                <hr style="margin: 10px 0;">
-                <b>📝 Instructions:</b> {b.get('instructions', 'N/A')}
-            </div>
-            """, unsafe_allow_html=True)
-    else:
-        st.caption(scenario_data['description'])
+    st.caption(scenario_data.get('description', ''))
+
 
 
     for msg in st.session_state.messages:
